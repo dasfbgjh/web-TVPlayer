@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Player</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <div class="window">
+        <div class="titlebar" id="titlebar">
+            <svg class="titlebar-icon" viewBox="0 0 16 16"
+                style="width:16px;height:16px;margin-right:8px;opacity:0.8;fill:var(--accent);-webkit-app-region:no-drag;">
+                <rect x="1" y="2" width="5" height="12" rx="1" opacity="0.9" />
+                <rect x="7" y="2" width="5" height="12" rx="1" opacity="0.6" />
+                <polygon points="14,5 14,11 16,8" opacity="0.8" />
+            </svg>
+            <span class="titlebar-title">TV Player</span>
+            <div class="zorder-switch" onclick="toggleZOrder()" title="播放器置顶">
+                <span class="zorder-switch-label">隐藏播放控制</span>
+                <div class="zorder-switch-track" id="zorderTrack">
+                    <div class="zorder-switch-thumb"></div>
+                </div>
+            </div>
+            <button class="titlebar-btn minimize" title="最小化">
+                <svg viewBox="0 0 10 10">
+                    <rect y="4.5" width="10" height="1" />
+                </svg>
+            </button>
+            <button class="titlebar-btn maximize" title="最大化">
+                <svg viewBox="0 0 10 10">
+                    <rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1" />
+                </svg>
+            </button>
+            <button class="titlebar-btn close" title="关闭">
+                <svg viewBox="0 0 10 10">
+                    <path d="M0.5 0.5L9.5 9.5M9.5 0.5L0.5 9.5" stroke="currentColor" stroke-width="1.1" fill="none" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="placeholder" id="placeholder">
+            <div class="placeholder-inner" onmouseenter="showControls()" onmouseleave="hideControls()"
+                onmousemove="showControls()">
+                <div class="controls-overlay" id="controls">
+                    <div class="progress-bar" id="progressBar" onclick="seekTo(event)">
+                        <div class="progress-fill" id="progressFill">
+                            <div class="progress-thumb" id="progressThumb"></div>
+                        </div>
+                    </div>
+                    <div class="controls-row">
+                        <span class="time-display" id="timeDisplay">00:00 / 00:00</span>
+                        <div class="ctrl-spacer"></div>
+                        <div class="center-controls">
+                            <button class="ctrl-btn" id="prevChBtn" onclick="prevChannel()" title="上一频道">
+                                <svg viewBox="0 0 18 18">
+                                    <path d="M10,9 L17,3 L17,15 Z" />
+                                    <path d="M3,9 L10,3 L10,15 Z" />
+                                </svg>
+                            </button>
+                            <button class="ctrl-btn" id="playBtn" onclick="togglePlay()">
+                                <svg viewBox="0 0 18 18">
+                                    <polygon points="5,2 16,9 5,16" />
+                                </svg>
+                            </button>
+                            <button class="ctrl-btn" id="nextChBtn" onclick="nextChannel()" title="下一频道">
+                                <svg viewBox="0 0 18 18">
+                                    <path d="M8,9 L1,3 L1,15 Z" />
+                                    <path d="M15,9 L8,3 L8,15 Z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="ctrl-spacer"></div>
+                        <div class="volume-group">
+                            <div class="volume-slider" id="volumeSlider" onclick="setVolume(event)">
+                                <div class="volume-fill" id="volumeFill">
+                                    <div class="volume-thumb" id="volumeThumb"></div>
+                                </div>
+                            </div>
+                            <span class="volume-value" id="volumeValue">100</span>
+                        </div>
+                        <span class="quality-badge" id="qualityBadge" onclick="cycleQuality()">--</span>
+                        <span class="rate-badge" id="rateBadge" onclick="cycleRate()">1x</span>
+                        <button class="ctrl-btn" onclick="toggleFullscreen()" title="全屏">
+                            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <polyline points="2,6 2,2 6,2" />
+                                <polyline points="12,2 16,2 16,6" />
+                                <polyline points="16,12 16,16 12,16" />
+                                <polyline points="6,16 2,16 2,12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="sidebar open" id="sidebar">
+                    <div id="categoryTabs"
+                        style="display:flex;flex-wrap:wrap;gap:2px;padding:4px 8px;border-bottom:1px solid var(--border);max-height:120px;overflow-y:auto;">
+                    </div>
+                    <div class="sidebar-content" id="sidebarContent">
+                        <div id="programsPanel"></div>
+                    </div>
+                </div>
+                <div class="sidebar-collapse open" id="sidebarCollapse" onclick="toggleSidebar()" title="节目列表">
+                    <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <polyline points="7,1 3,5 7,9" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="window.js"></script>
+    <script src="index.js"></script>
+</body>
+
+</html>

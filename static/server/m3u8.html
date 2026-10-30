@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <title>M3U8 Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI Variable', 'Segoe UI', sans-serif;
+        }
+
+        .container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .error {
+            display: none;
+            color: #e44;
+            font-size: 14px;
+            text-align: center;
+            padding: 20px;
+            word-break: break-all;
+        }
+
+        .error.show {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <video id="player" controls autoplay></video>
+        <div id="error" class="error"></div>
+    </div>
+    <script src="hls.js"></script>
+    <script>
+        (function () {
+            var params = new URLSearchParams(window.location.search);
+            var src = params.get('url') || params.get('src') || '';
+            var video = document.getElementById('player');
+            var errorEl = document.getElementById('error');
+
+            function showError(msg) {
+                video.style.display = 'none';
+                errorEl.textContent = msg;
+                errorEl.classList.add('show');
+            }
+
+            if (!src) {
+                showError('缺少 m3u8 链接，请通过 url 或 src 查询参数传入\n示例: m3u8.html?url=https://example.com/stream.m3u8');
+                return;
+            }
+
+            if (Hls.isSupported()) {
+                var hls = new Hls({
+                    maxBufferLength: 30,
+                    maxMaxBufferLength: 60
+                });
+                hls.loadSource(src);
+                hls.attachMedia(video);
+                hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                    video.play();
+                });
+                hls.on(Hls.Events.ERROR, function (event, data) {
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                hls.destroy();
+                                showError('播放失败: ' + data.details);
+                                break;
+                        }
+                    }
+                });
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = src;
+                video.addEventListener('loadedmetadata', function () {
+                    video.play();
+                });
+            } else {
+                showError('当前浏览器不支持 HLS 播放');
+            }
+        })();
+    </script>
+</body>
+
+</html>
