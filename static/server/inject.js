@@ -34,7 +34,13 @@
                 document.querySelector('.vjs-tech') ||
                 document.getElementsByTagName('video')[0];
         },
-        playFullscreen: () => true,
+        playFullscreen: () => {
+            const video = currentVideo;
+            if (!video) return false;
+            if (video.requestFullscreen)
+                video.requestFullscreen();
+            return true;
+        },
         postprocess: () => { },
         tryAutoplay: () => {
             const video = currentVideo;
@@ -141,364 +147,395 @@
         }
     };
 
-    const PLATFORM_RULES = [
-        {
-            name: 'yangshipin',
-            match: (url) => url.includes('yangshipin.cn'),
-            playFullscreen: () => {
-                const btn = document.querySelector('.videoFull');
-                if (btn) btn.click();
-                return true;
-            },
-            postprocess: () => {
-                const yFull = document.querySelector('.y-full');
-                if (yFull) yFull.remove();
-            }
-        },
-        {
-            name: 'cctv-live',
-            match: (url) => url.includes('tv.cctv.com/live'),
-            playFullscreen: (video) => {
-                if (video) video.classList.add('tv-video-full');
-                return true;
-            },
-            postprocess: () => {
-                var el = document.querySelector('.phone');
-                if (el) el.remove();
-                el = document.querySelector('.nav_wrapper_bg');
-                if (el) el.remove();
-                el = document.querySelector('.header_nav');
-                if (el) el.remove();
-                el = document.querySelector('.retrieve');
-                if (el) el.remove();
-                el = document.querySelector('.kj');
-                if (el) el.remove();
-            }
-        },
-        {
-            name: 'cctvideo',
-            match: (url) => url.includes('tv.cctv.com/') && !url.includes('/live'),
-            playFullscreen: (video) => {
-                if (video) video.classList.add('tv-video-full');
-                return true;
-            },
-            postprocess: () => {
-                var el = document.querySelector('.retrieve');
-                if (el) el.remove();
-                el = document.querySelector('.gwA18043_ind01');
-                if (el) el.remove();
-                el = document.querySelector('.XUQIU18897_fuceng');
-                if (el) el.remove();
-            }
-        },
-        {
-            name: 'bestv',
-            match: (url) => url.includes('bestv.com.cn'),
-            playFullscreen: () => {
-                const el = document.querySelector('.video-js') || document.querySelector('video');
-                if (el) el.classList.add('tv-video-full');
-                const vjsCtrl = document.querySelector('.vjs-fullscreen-control');
-                if (vjsCtrl) vjsCtrl.click();
-                return true;
-            }
-        },
-        {
-            name: 'xigua',
-            match: (url) => url.includes('ixigua.com'),
-            preprocess: () => {
-                const el = document.querySelector('.big-card-button');
-                if (!el) return false;
-                el.click();
-                return true;
-            },
-            playFullscreen: () => {
-                var video = currentVideo;
-                if (!video) return false;
-                video.classList.add('tv-video-full');
-                setTimeout(() => {
-                    video.play();
-                }, 1000);
-                return true;
-            }
-        },
-        {
-            name: 'qq',
-            match: (url) => url.includes('v.qq.com'),
-            playFullscreen: () => {
-                const btn = document.querySelector('.txp_btn_fake');
-                if (btn) btn.click();
-                return true;
-            },
-            postprocess: () => {
-                setTimeout(() => {
-                    const container = document.querySelector('.txp_videos_container');
-                    if (container) {
-                        container.style.cssText = 'left:0;top:0;width:100%;height:100%;position:fixed;z-index:99990;';
-                    }
-                    const mask = document.querySelector('.txp_full_screen_pause-player-mask');
-                    if (mask) {
-                        mask.style.cssText = 'left:0;top:0;width:100%;height:100%;';
-                    }
-                }, 3000);
-            }
-        },
-        {
-            name: 'youku',
-            match: (url) => url.includes('v.youku.com'),
-            playFullscreen: () => {
-                const btn = document.querySelector('#webfullscreen-icon');
-                if (btn) btn.click();
-                return true;
-            }
-        },
-        {
-            name: 'iqiyi',
-            match: (url) => url.includes('iqiyi.com'),
-            playFullscreen: () => {
-                const el = document.querySelector('#video');
-                if (el) el.classList.add('tv-video-full');
-                return true;
-            },
-            postprocess: () => {
-                const barrage = document.querySelector('#pcaBarrageContainer');
-                if (barrage) barrage.remove();
-            }
-        },
-        {
-            name: 'mgtv-live',
-            match: (url) => url.includes('mgtv.com/live'),
-            preprocess: () => {
-                return selectMgtvChannelByTag();
-            },
-            playFullscreen: () => {
-                const livePlayer = document.querySelector('.mgtv-live-player');
-                if (livePlayer) livePlayer.classList.add('tv-video-full');
-                return true;
-            },
-            postprocess: () => {
+    const [pushRule, PLATFORM_RULES] = (function () {
+        const rules = [];
 
-            }
-        },
-        {
-            name: 'mgtv',
-            match: (url) => url.includes('mgtv.com'),
-            playFullscreen: () => {
-                const el = document.querySelector('#mgtv-player-wrap');
-                if (el) el.classList.add('tv-video-full');
-                return true;
-            },
-            postprocess: () => {
-                const danmu = document.querySelector('.mango-danmu-layer');
-                if (danmu) danmu.remove();
-            }
-        },
-        {
-            name: 'jstv',
-            match: (url) => url.includes('live.jstv.com'),
-            playFullscreen: () => {
-                document.body.style.position = 'fixed';
-                const video = document.querySelector('video');
-                if (video) video.classList.add('tv-video-full');
-                return true;
-            },
-            postprocess: () => {
-                selectByTagText({
-                    itemSelector: '#programMain .swiper-slide',
-                    textSelector: '.title',
-                    activeClass: 'active',
-                    clickSelector: '#programMain .title'
-                });
-            }
-        },
-        {
-            name: 'kankanews',
-            match: (url) => url.includes('live.kankanews.com'),
-            playFullscreen: () => {
-                const video = document.querySelector('video');
-                if (video) {
-                    video.classList.add('tv-video-full');
-                    video.style.width = '100vw';
-                    video.style.height = '100vh';
-                }
-                return true;
-            },
-            postprocess: () => {
-                selectByTagText({
-                    itemSelector: '.channel-list li',
-                    textSelector: 'span',
-                    activeClass: 'active'
-                });
-            }
-        },
-        {
-            name: 'btime',
-            match: (url) => url.includes('btime.com'),
-            playFullscreen: () => {
-                document.body.style.position = 'fixed';
-                const video = document.querySelector('video');
-                if (video) video.classList.add('tv-video-full');
-                return true;
-            },
-            postprocess: () => {
-                selectByTagIndex('.right_list li');
-            }
-        },
-        {
-            name: "hbtv",
-            match: (url) => url.includes('web.cmc.hebtv.com'),
-            postprocess: () => {
-                let el = document.querySelector('.control-content');
-                if (el) el.remove();
-                el = document.querySelector('.downApp');
-                if (el) el.remove();
-                el = document.querySelector('.goIndex');
-                if (el) el.remove();
-            }
-        },
-        {
-            name: 'nmtv',
-            match: (url) => url.includes('nmtv.cn'),
-            playFullscreen: () => {
-                const video = document.querySelector('video');
-                if (video) {
-                    video.classList.add('tv-video-full');
-                    video.style.width = '100vw';
-                    video.style.height = '100vh';
-                }
-                return true;
-            },
-            postprocess: () => {
-                selectByTagText({
-                    itemSelector: '.tv-dete .c-label',
-                    activeClass: 'active'
-                });
-            }
-        },
-        {
-            name: 'fengshows',
-            match: (url) => url.includes('fengshows.com'),
-            preprocess: () => {
-                const cookieBtn = document.querySelector('.fs-cookies-dialog-ok-btn');
-                if (cookieBtn) cookieBtn.click();
-                const mutedIcon = document.querySelector('.vjs-icon-muted');
-                if (mutedIcon) mutedIcon.click();
-                return true;
-            },
-            playFullscreen: () => {
-                document.body.style.position = 'fixed';
-                const fsVideo = document.querySelector('.fs-video');
-                if (fsVideo) fsVideo.classList.add('tv-video-full');
-                return true;
-            },
-            postprocess: () => {
-                const ctrlBar = document.querySelector('.vjs-controlbar');
-                if (ctrlBar) ctrlBar.style.display = 'none';
-                const errorModal = document.querySelector('.vjs-error-modal');
-                if (errorModal) errorModal.style.display = 'none';
-                selectByTagIndex('.fs-live-banner-cluster-schedule-station');
-            }
-        },
-        {
-            name: 'lcxw',
-            match: (url) => url.includes('lcxw.cn'),
-            playFullscreen: () => {
-                document.body.style.position = 'fixed';
-                const player = document.querySelector('#live-player');
-                if (player) {
-                    player.classList.add('tv-video-full');
-                    player.style.width = '100vw';
-                    player.style.height = '100vh';
-                    player.querySelectorAll(':scope > *').forEach(child => {
-                        child.style.width = '100%';
-                        child.style.height = '100%';
-                        child.querySelectorAll(':scope > *').forEach(gc => {
-                            gc.style.width = '100%';
-                            gc.style.height = '100%';
-                        });
-                    });
-                }
-                return true;
-            },
-            postprocess: () => {
-                selectByTagIndex('.item-wp');
-            }
-        },
-        {
-            name: 'jlntv',
-            match: (url) => url.includes('jlntv.cn'),
-            playFullscreen: () => {
-                document.body.style.position = 'fixed';
-                const player = document.querySelector('#live-player');
-                if (player) {
-                    player.classList.add('tv-video-full');
-                    player.style.width = '100vw';
-                    player.style.height = '100vh';
-                    player.querySelectorAll(':scope > *').forEach(child => {
-                        child.style.width = '100%';
-                        child.style.height = '100%';
-                        child.querySelectorAll(':scope > *').forEach(gc => {
-                            gc.style.width = '100%';
-                            gc.style.height = '100%';
-                        });
-                    });
-                }
-                return true;
-            },
-            postprocess: () => {
-                selectByTagIndex('.item-wp');
-            }
-        },
-        {
-            name: 'guangdianyun',
-            match: (url) => url.includes('guangdianyun.tv'),
-            playFullscreen: () => {
-                document.body.style.position = 'fixed';
-                const video = document.querySelector('video');
-                if (video) {
-                    video.classList.add('tv-video-full');
-                    video.style.position = 'fixed';
-                }
-                return true;
-            },
-            postprocess: () => {
-                const mobileNum = document.querySelector('.mobile-num');
-                if (mobileNum) mobileNum.remove();
-            }
-        },
-        {
-            name: 'bili',
-            match: (url) => url.includes('bilibili.com/bangumi'),
-            playFullscreen: () => {
-                const el = document.querySelector('#bilibili-player-wrap');
-                if (el) {
-                    el.classList.add('tv-video-full');
-                    el.style.paddingRight = '0';
-                }
-                const sendBar = document.querySelector('.bpx-player-sending-bar');
-                if (sendBar) sendBar.style.display = 'none';
-                return true;
-            },
-            postprocess: async () => {
-                var el = document.querySelector('.bpx-player-row-dm-wrap');
-                if (el) el.remove();
-                for (let i = 0; i < 3; i++) {
-                    el = document.querySelector('.bili-header__menu.is-zh.bili-header__bar');
-                    if (!el) {
-                        await new Promise(r => setTimeout(r, 1000));
-                        continue;
-                    }
-                    el.remove();
-                    el = document.querySelector('.v-popover-content');
-                    if (!el) {
-                        await new Promise(r => setTimeout(r, 1000));
-                        continue;
-                    }
-                    el.remove();
-                    break;
-                }
-            }
+        function pushRule(name) {
+            const r = {
+                name: name,
+                match: null,
+                preprocess: null,
+                findVideo: null,
+                playFullscreen: null,
+                postprocess: null,
+                tryAutoplay: null,
+                getVideoInfo: null,
+                getEpisodeList: null,
+                getQualityList: null,
+                getRateList: null,
+                executeCommand: null
+            };
+            rules.push(r);
+            return r;
         }
-    ];
+        return [pushRule, rules]
+    })();
+    // ============================
+    let rule = pushRule('yangshipin');
+    rule.match = function (url) { return url.includes('yangshipin.cn'); }
+    rule.playFullscreen = function () {
+        const btn = document.querySelector('.videoFull');
+        if (btn) btn.click();
+        return true;
+    }
+    rule.postprocess = function () {
+        const yFull = document.querySelector('.y-full');
+        if (yFull) yFull.remove();
+    }
+
+    // ============================
+    rule = pushRule('cctv-live');
+    rule.match = function (url) { return url.includes('tv.cctv.com/live'); }
+    rule.playFullscreen = function (video) {
+        if (video) video.classList.add('tv-video-full');
+        return true;
+    }
+    rule.postprocess = function () {
+        var el = document.querySelector('.phone');
+        if (el) el.remove();
+        el = document.querySelector('.nav_wrapper_bg');
+        if (el) el.remove();
+        el = document.querySelector('.header_nav');
+        if (el) el.remove();
+        el = document.querySelector('.retrieve');
+        if (el) el.remove();
+        el = document.querySelector('.kj');
+        if (el) el.remove();
+    }
+
+    // ============================
+    rule = pushRule('cctvideo');
+    rule.match = function (url) { return url.includes('tv.cctv.com/') && !url.includes('/live'); }
+    rule.playFullscreen = function (video) {
+        if (video) video.classList.add('tv-video-full');
+        return true;
+    }
+    rule.postprocess = function () {
+        var el = document.querySelector('.retrieve');
+        if (el) el.remove();
+        el = document.querySelector('.gwA18043_ind01');
+        if (el) el.remove();
+        el = document.querySelector('.XUQIU18897_fuceng');
+        if (el) el.remove();
+    }
+
+    // ============================
+    rule = pushRule('bestv');
+    rule.match = function (url) { return url.includes('bestv.com.cn'); }
+    rule.playFullscreen = function () {
+        const el = document.querySelector('.video-js') || document.querySelector('video');
+        if (el) el.classList.add('tv-video-full');
+        const vjsCtrl = document.querySelector('.vjs-fullscreen-control');
+        if (vjsCtrl) vjsCtrl.click();
+        return true;
+    }
+
+    // ============================
+    rule = pushRule('xigua');
+    rule.match = function (url) { return url.includes('ixigua.com'); }
+    rule.preprocess = function () {
+        const el = document.querySelector('.big-card-button');
+        if (!el) return false;
+        el.click();
+        return true;
+    }
+    rule.playFullscreen = function () {
+        var video = currentVideo;
+        if (!video) return false;
+        video.classList.add('tv-video-full');
+        setTimeout(() => {
+            video.play();
+        }, 1000);
+        return true;
+    }
+
+    // ============================
+    rule = pushRule('qq');
+    rule.match = function (url) { return url.includes('v.qq.com'); }
+    rule.playFullscreen = function () {
+        const btn = document.querySelector('.txp_btn_fake');
+        if (btn) btn.click();
+        return true;
+    }
+    rule.postprocess = function () {
+        setTimeout(() => {
+            const container = document.querySelector('.txp_videos_container');
+            if (container) {
+                container.style.cssText = 'left:0;top:0;width:100%;height:100%;position:fixed;z-index:99990;';
+            }
+            const mask = document.querySelector('.txp_full_screen_pause-player-mask');
+            if (mask) {
+                mask.style.cssText = 'left:0;top:0;width:100%;height:100%;';
+            }
+        }, 3000);
+    }
+
+    // ============================
+    rule = pushRule('youku');
+    rule.match = function (url) { return url.includes('v.youku.com'); }
+    rule.playFullscreen = function () {
+        const btn = document.querySelector('#webfullscreen-icon');
+        if (btn) btn.click();
+        return true;
+    }
+
+    // ============================
+    rule = pushRule('iqiyi');
+    rule.match = function (url) { return url.includes('iqiyi.com'); }
+    rule.findVideo = function () {
+        return document.querySelector('.inner-video');
+    }
+    rule.playFullscreen = function () {
+        const el = document.querySelector('.playerButtons_fullScreenBtn__R0GRr');
+        if (el) {
+            el.click();
+            return true;
+        }
+        if (currentVideo.requestFullscreen) {
+            setTimeout(() => {
+                currentVideo.requestFullscreen();
+            }, 2000);
+            return true;
+        }
+        return false;
+    }
+    rule.postprocess = function () {
+        let obj = rule;
+        setInterval(() => {
+            const skip = document.querySelector('.cd-time');
+            if (skip) {
+                skip.click();
+                obj.playFullscreen();
+            }
+        }, 2000);
+    }
+
+    // ============================
+    rule = pushRule('mgtv-live');
+    rule.match = function (url) { return url.includes('mgtv.com/live'); }
+    rule.preprocess = function () {
+        return selectMgtvChannelByTag();
+    }
+    rule.playFullscreen = async function () {
+        const video = currentVideo;
+        if (!video) return false;
+        setTimeout(() => {
+            video.requestFullscreen();
+        }, 2000);
+        return true;
+    }
+
+    // ============================
+    rule = pushRule('jstv');
+    rule.match = function (url) { return url.includes('live.jstv.com'); }
+    rule.playFullscreen = function () {
+        document.body.style.position = 'fixed';
+        const video = document.querySelector('video');
+        if (video) video.classList.add('tv-video-full');
+        return true;
+    }
+    rule.postprocess = function () {
+        selectByTagText({
+            itemSelector: '#programMain .swiper-slide',
+            textSelector: '.title',
+            activeClass: 'active',
+            clickSelector: '#programMain .title'
+        });
+    }
+
+    // ============================
+    rule = pushRule('kankanews');
+    rule.match = function (url) { return url.includes('live.kankanews.com'); }
+    rule.playFullscreen = function () {
+        const video = document.querySelector('video');
+        if (video) {
+            video.classList.add('tv-video-full');
+            video.style.width = '100vw';
+            video.style.height = '100vh';
+        }
+        return true;
+    }
+    rule.postprocess = function () {
+        selectByTagText({
+            itemSelector: '.channel-list li',
+            textSelector: 'span',
+            activeClass: 'active'
+        });
+    }
+
+    // ============================
+    rule = pushRule('btime');
+    rule.match = function (url) { return url.includes('btime.com'); }
+    rule.playFullscreen = function () {
+        document.body.style.position = 'fixed';
+        const video = document.querySelector('video');
+        if (video) video.classList.add('tv-video-full');
+        return true;
+    }
+    rule.postprocess = function () {
+        selectByTagIndex('.right_list li');
+    }
+
+    // ============================
+    rule = pushRule('hbtv');
+    rule.match = function (url) { return url.includes('web.cmc.hebtv.com'); }
+    rule.postprocess = function () {
+        let el = document.querySelector('.control-content');
+        if (el) el.remove();
+        el = document.querySelector('.downApp');
+        if (el) el.remove();
+        el = document.querySelector('.goIndex');
+        if (el) el.remove();
+    }
+
+    // ============================
+    rule = pushRule('nmtv');
+    rule.match = function (url) { return url.includes('nmtv.cn'); }
+    rule.playFullscreen = function () {
+        const video = document.querySelector('video');
+        if (video) {
+            video.classList.add('tv-video-full');
+            video.style.width = '100vw';
+            video.style.height = '100vh';
+        }
+        return true;
+    }
+    rule.postprocess = function () {
+        selectByTagText({
+            itemSelector: '.tv-dete .c-label',
+            activeClass: 'active'
+        });
+    }
+
+    // ============================
+    rule = pushRule('fengshows');
+    rule.match = function (url) { return url.includes('fengshows.com'); }
+    rule.preprocess = function () {
+        const cookieBtn = document.querySelector('.fs-cookies-dialog-ok-btn');
+        if (cookieBtn) cookieBtn.click();
+        const mutedIcon = document.querySelector('.vjs-icon-muted');
+        if (mutedIcon) mutedIcon.click();
+        return true;
+    }
+    rule.playFullscreen = function () {
+        document.body.style.position = 'fixed';
+        const fsVideo = document.querySelector('.fs-video');
+        if (fsVideo) fsVideo.classList.add('tv-video-full');
+        return true;
+    }
+    rule.postprocess = function () {
+        const ctrlBar = document.querySelector('.vjs-controlbar');
+        if (ctrlBar) ctrlBar.style.display = 'none';
+        const errorModal = document.querySelector('.vjs-error-modal');
+        if (errorModal) errorModal.style.display = 'none';
+        selectByTagIndex('.fs-live-banner-cluster-schedule-station');
+    }
+
+    // ============================
+    rule = pushRule('lcxw');
+    rule.match = function (url) { return url.includes('lcxw.cn'); }
+    rule.playFullscreen = function () {
+        document.body.style.position = 'fixed';
+        const player = document.querySelector('#live-player');
+        if (player) {
+            player.classList.add('tv-video-full');
+            player.style.width = '100vw';
+            player.style.height = '100vh';
+            player.querySelectorAll(':scope > *').forEach(child => {
+                child.style.width = '100%';
+                child.style.height = '100%';
+                child.querySelectorAll(':scope > *').forEach(gc => {
+                    gc.style.width = '100%';
+                    gc.style.height = '100%';
+                });
+            });
+        }
+        return true;
+    }
+    rule.postprocess = function () {
+        selectByTagIndex('.item-wp');
+    }
+
+    // ============================
+    rule = pushRule('jlntv');
+    rule.match = function (url) { return url.includes('jlntv.cn'); }
+    rule.playFullscreen = function () {
+        document.body.style.position = 'fixed';
+        const player = document.querySelector('#live-player');
+        if (player) {
+            player.classList.add('tv-video-full');
+            player.style.width = '100vw';
+            player.style.height = '100vh';
+            player.querySelectorAll(':scope > *').forEach(child => {
+                child.style.width = '100%';
+                child.style.height = '100%';
+                child.querySelectorAll(':scope > *').forEach(gc => {
+                    gc.style.width = '100%';
+                    gc.style.height = '100%';
+                });
+            });
+        }
+        return true;
+    }
+    rule.postprocess = function () {
+        selectByTagIndex('.item-wp');
+    }
+
+    // ============================
+    rule = pushRule('guangdianyun');
+    rule.match = function (url) { return url.includes('guangdianyun.tv'); }
+    rule.playFullscreen = function () {
+        document.body.style.position = 'fixed';
+        const video = document.querySelector('video');
+        if (video) {
+            video.classList.add('tv-video-full');
+            video.style.position = 'fixed';
+        }
+        return true;
+    }
+    rule.postprocess = function () {
+        const mobileNum = document.querySelector('.mobile-num');
+        if (mobileNum) mobileNum.remove();
+    }
+
+    // ============================
+    rule = pushRule('bili');
+    rule.match = function (url) { return url.includes('bilibili.com/bangumi'); }
+    rule.playFullscreen = function () {
+        const el = document.querySelector('#bilibili-player-wrap');
+        if (el) {
+            el.classList.add('tv-video-full');
+            el.style.paddingRight = '0';
+        }
+        const sendBar = document.querySelector('.bpx-player-sending-bar');
+        if (sendBar) sendBar.style.display = 'none';
+        return true;
+    }
+    rule.postprocess = async function () {
+        var el = document.querySelector('.bpx-player-row-dm-wrap');
+        if (el) el.remove();
+
+        const rm = async function (name) {
+            let el = document.querySelector(name);
+            if (el) {
+                el.remove();
+                return true;
+            }
+            await new Promise(r => setTimeout(r, 1000));
+            return false;
+        };
+
+        for (let i = 0; i < 3; i++) {
+            if (!await rm('.bili-header__menu.is-zh.bili-header__bar'))
+                continue;
+            if (!await rm('.v-popover-content'))
+                continue;
+            if (!await rm('.bpx-player-toast-wrap'))
+                continue;
+            break;
+        }
+    }
+
 
     function getQueryParams() {
         const params = new URLSearchParams(window.location.search);
@@ -669,22 +706,22 @@
             },
             {
                 name: 'findVideo',
-                fn: () => {
-                    currentVideo = getRuleMethod('findVideo')();
+                fn: async () => {
+                    currentVideo = await getRuleMethod('findVideo')();
                     return currentVideo;
                 }
             },
             {
                 name: 'playFullscreen',
                 fn: () => {
-                    if (currentVideo) currentVideo.classList.add('tv-video-full');
-                    return getRuleMethod('playFullscreen')(currentVideo);
-                }
+                    currentVideo.classList.add('tv-video-full');
+                    return getRuleMethod('playFullscreen')(currentVideo)
+                },
             },
             {
                 name: 'postprocess',
-                fn: () => {
-                    getRuleMethod('postprocess')(currentVideo);
+                fn: async () => {
+                    await getRuleMethod('postprocess')(currentVideo);
                     return true;
                 }
             }
@@ -700,7 +737,7 @@
                 } catch (e) {
                     console.log('[tv] pipeline:', step.name, 'error:', e.message);
                 }
-                console.log('[tv] pipeline:', step.name, 'retry');
+                console.debug('[tv] pipeline:', step.name, 'retry', window.location.href);
                 await new Promise(r => setTimeout(r, RETRY_DELAY));
             }
         }
@@ -797,4 +834,14 @@
     } else {
         init();
     }
+
+    window.inject = {
+        currentVideo: function () {
+            return currentVideo;
+        },
+        currentRule: function () {
+            return currentRule;
+        },
+        defaultRule: defaultRule,
+    };
 })();
